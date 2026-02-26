@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Master Conciertos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>#panel-privado { display: none; }</style>
+</head>
+<body class="bg-zinc-100 font-sans">
+
+    <div id="seccion-login" class="min-h-screen flex items-center justify-center bg-black p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+            <h1 class="text-2xl font-black mb-6 uppercase italic"><span class="text-purple-600">MASTER</span> ADMIN</h1>
+            <div class="space-y-4">
+                <input type="text" id="user" placeholder="Usuario" class="w-full border p-3 rounded-xl text-center outline-none">
+                <input type="password" id="pass" placeholder="Contraseña" class="w-full border p-3 rounded-xl text-center outline-none">
+                <button onclick="validarAcceso()" class="w-full bg-black text-white font-bold py-3 rounded-xl hover:bg-zinc-800 transition">ENTRAR</button>
+            </div>
+            <p id="error" class="text-red-500 text-xs mt-4 hidden italic">Datos incorrectos.</p>
+        </div>
+    </div>
+
+    <div id="panel-privado">
+        <nav class="bg-black text-white p-4 flex justify-between items-center shadow-xl">
+            <h1 class="text-lg font-bold italic text-gold uppercase">Master Admin Cloud</h1>
+            <button onclick="location.reload()" class="bg-red-600 px-4 py-2 rounded-lg text-xs font-bold uppercase">Cerrar Sesión</button>
+        </nav>
+
+        <main class="container mx-auto mt-10 p-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200">
+                        <h2 class="text-xl font-black mb-6 uppercase">Nuevo Evento</h2>
+                        <form id="form-evento" class="space-y-4">
+                            <input type="text" id="nombre" required placeholder="Nombre del Artista" class="w-full border p-3 rounded-xl outline-none">
+                            <input type="text" id="ubicacion" required placeholder="Ciudad - Lugar" class="w-full border p-3 rounded-xl outline-none">
+                            <input type="date" id="fecha" required class="w-full border p-3 rounded-xl outline-none">
+                            <div class="bg-zinc-50 p-4 rounded-xl border-2 border-dashed border-zinc-300">
+                                <input type="file" id="foto" accept="image/*" required class="text-xs">
+                            </div>
+                            <button type="submit" id="btn-publicar" class="w-full bg-black text-yellow-500 font-black py-4 rounded-xl uppercase transition">Publicar en la Nube</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200">
+                        <h2 class="text-xl font-black mb-6 uppercase">Cartelera en Vivo</h2>
+                        <div id="tabla-admin" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAA83QincIrW2GyUWEcDkCLNAz6DAfGpPo",
+            authDomain: "masterconciertos.firebaseapp.com",
+            databaseURL: "https://masterconciertos-default-rtdb.firebaseio.com",
+            projectId: "masterconciertos",
+            storageBucket: "masterconciertos.firebasestorage.app",
+            messagingSenderId: "819196526862",
+            appId: "1:819196526862:web:27be1a0eee330d76a4975f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function validarAcceso() {
+            if (document.getElementById('user').value === "usuario" && document.getElementById('pass').value === "1234") {
+                document.getElementById('seccion-login').style.display = 'none';
+                document.getElementById('panel-privado').style.display = 'block';
+                escucharEventos();
+            } else { document.getElementById('error').classList.remove('hidden'); }
+        }
+
+        function escucharEventos() {
+            db.ref('eventos').on('value', (snapshot) => {
+                const lista = document.getElementById('tabla-admin');
+                lista.innerHTML = '';
+                snapshot.forEach((childSnapshot) => {
+                    const ev = childSnapshot.val();
+                    const id = childSnapshot.key;
+                    lista.innerHTML += `
+                        <div class="flex items-center justify-between p-4 bg-zinc-50 rounded-xl border border-zinc-200">
+                            <div class="flex items-center gap-4">
+                                <img src="${ev.foto}" class="w-14 h-14 object-cover rounded-lg">
+                                <div><h4 class="font-bold uppercase">${ev.nombre}</h4><p class="text-xs text-zinc-500">${ev.ubicacion}</p></div>
+                            </div>
+                            <button onclick="eliminar('${id}')" class="text-red-500 font-bold text-xs px-4 py-2 rounded-lg border border-red-100 hover:bg-red-50">BORRAR</button>
+                        </div>`;
+                });
+            });
+        }
+
+        document.getElementById('form-evento').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-publicar');
+            btn.innerText = "Subiendo...";
+            btn.disabled = true;
+
+            const file = document.getElementById('foto').files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const nuevoEvento = {
+                    nombre: document.getElementById('nombre').value,
+                    ubicacion: document.getElementById('ubicacion').value,
+                    fecha: document.getElementById('fecha').value,
+                    foto: reader.result
+                };
+                db.ref('eventos').push(nuevoEvento).then(() => {
+                    document.getElementById('form-evento').reset();
+                    btn.innerText = "Publicar en la Nube";
+                    btn.disabled = false;
+                    alert("¡Publicado en todo el mundo!");
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function eliminar(id) { if(confirm('¿Borrar de la nube?')) db.ref('eventos/' + id).remove(); }
+    </script>
+</body>
+</html>

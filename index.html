@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Conciertos | Cartelera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { background-color: #050505; }
+        .text-gold { color: #d4af37; }
+        .btn-gold { background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c); color: black; }
+        .card-gradient { background: linear-gradient(145deg, #121212, #1a1a1a); }
+    </style>
+</head>
+<body class="text-white font-sans">
+
+    <header class="py-8 border-b border-zinc-800 bg-black text-center">
+        <h1 class="text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-purple-500 to-purple-900 uppercase italic leading-none">MASTER</h1>
+        <h2 class="text-4xl font-bold tracking-[0.2em] text-gold uppercase mt-[-12px]">CONCIERTOS</h2>
+        <p class="text-xs tracking-[0.4em] text-zinc-500 mt-2 uppercase">Logística & Venta de Boletería</p>
+    </header>
+
+    <main class="container mx-auto mt-12 p-4">
+        <div class="mb-10 max-w-md mx-auto">
+            <input type="text" id="buscador" onkeyup="filtrarEventos()" placeholder="Buscar artista o ciudad..." class="w-full bg-zinc-900 border border-zinc-700 p-3 rounded-full px-6 text-sm focus:border-gold outline-none text-white transition">
+        </div>
+        <h2 class="text-2xl font-bold mb-8 border-l-4 border-gold pl-4 uppercase tracking-widest">Próximos Eventos</h2>
+        <div id="lista-eventos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        <div id="cargando" class="text-center py-20 text-zinc-500 italic">Conectando con la cartelera...</div>
+    </main>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAA83QincIrW2GyUWEcDkCLNAz6DAfGpPo",
+            authDomain: "masterconciertos.firebaseapp.com",
+            databaseURL: "https://masterconciertos-default-rtdb.firebaseio.com",
+            projectId: "masterconciertos",
+            storageBucket: "masterconciertos.firebasestorage.app",
+            messagingSenderId: "819196526862",
+            appId: "1:819196526862:web:27be1a0eee330d76a4975f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        db.ref('eventos').on('value', (snapshot) => {
+            const contenedor = document.getElementById('lista-eventos');
+            const cargando = document.getElementById('cargando');
+            contenedor.innerHTML = '';
+            cargando.classList.add('hidden');
+
+            snapshot.forEach((childSnapshot) => {
+                const evento = childSnapshot.val();
+                const mensajeWa = encodeURIComponent(`¡Hola Master Conciertos! 🔥 Info para: *${evento.nombre}* en *${evento.ubicacion}*`);
+
+                contenedor.innerHTML += `
+                    <div class="card-gradient rounded-2xl overflow-hidden border border-zinc-800 hover:border-gold transition-all duration-500 group item-evento shadow-2xl">
+                        <img src="${evento.foto}" class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div class="p-5">
+                            <span class="text-gold font-bold text-[10px] tracking-widest uppercase">📍 ${evento.ubicacion}</span>
+                            <h3 class="text-xl font-black text-white uppercase mt-1 leading-tight">${evento.nombre}</h3>
+                            <div class="mt-3 pb-3 border-b border-zinc-800">
+                                <p class="text-zinc-500 text-[10px] uppercase italic">Fecha</p>
+                                <p class="font-bold text-sm text-zinc-200">${evento.fecha}</p>
+                            </div>
+                            <a href="https://wa.me/573215159607?text=${mensajeWa}" target="_blank" class="block w-full text-center btn-gold mt-4 py-3 rounded-xl font-black text-xs uppercase tracking-tighter hover:scale-[1.05] transition shadow-lg">Consultar Boletas</a>
+                        </div>
+                    </div>`;
+            });
+        });
+
+        function filtrarEventos() {
+            let input = document.getElementById('buscador').value.toLowerCase();
+            let tarjetas = document.getElementsByClassName('item-evento');
+            for (let i = 0; i < tarjetas.length; i++) {
+                let texto = tarjetas[i].innerText.toLowerCase();
+                tarjetas[i].style.display = texto.includes(input) ? "" : "none";
+            }
+        }
+    </script>
+</body>
+</html>
